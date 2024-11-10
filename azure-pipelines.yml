@@ -4,10 +4,9 @@ trigger:
       - main  # Define the branch that triggers the pipeline
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'ubuntu-latest'  # Use a single hosted agent
 
 variables:
-  # Reference the variable group to securely access tokens
   - group: api-token
 
 stages:
@@ -15,19 +14,16 @@ stages:
     jobs:
       - job: MavenBuild
         steps:
-          # Step 1: Manually Install Java 11
           - script: |
               sudo apt update
               sudo apt install -y openjdk-11-jdk
               java -version  # Verify installation
             displayName: 'Install Java 11'
-
-          # Step 2: Build the project with Maven
           - script: mvn -B clean compile
             displayName: 'Build with Maven'
 
   - stage: Test
-    dependsOn: Build
+    dependsOn: Build  # Ensures that this stage runs after Build
     jobs:
       - job: MavenTest
         steps:
@@ -35,14 +31,13 @@ stages:
             displayName: 'Run Tests'
 
   - stage: CodeAnalysis
-    dependsOn: Test
+    dependsOn: Test  # Ensures that this stage runs after Test
     jobs:
       - job: SonarCloudAnalysis
         steps:
-          # Step 1: Prepare SonarCloud Analysis
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'SonarCloud'  # Make sure this matches the service connection name you created
+              SonarCloud: 'SonarCloud'
               organization: 'srinathselvan'
               projectKey: 'srinathselvan_spring-petclinic'
               projectName: 'spring-petclinic'
@@ -55,32 +50,30 @@ stages:
                 sonar.organization=srinathselvan
                 sonar.projectKey=srinathselvan_spring-petclinic
                 sonar.host.url=https://sonarcloud.io
-                sonar.login=$(SONAR_TOKEN)  # Ensure SONAR_TOKEN is defined in the Variable Group
-
+                sonar.login=$(SONAR_TOKEN)
             displayName: 'Prepare SonarCloud Analysis'
 
-          # Step 2: Run SonarCloud Analysis
           - script: |
               mvn sonar:sonar \
                 -Dsonar.organization=srinathselvan \
                 -Dsonar.projectKey=srinathselvan_spring-petclinic \
                 -Dsonar.host.url=https://sonarcloud.io \
-                -Dsonar.login=$(SONAR_TOKEN)  # Ensure SONAR_TOKEN is properly set
+                -Dsonar.login=$(SONAR_TOKEN)
             displayName: 'Run SonarCloud Analysis'
 
   - stage: DependencyScan
-    dependsOn: CodeAnalysis
+    dependsOn: CodeAnalysis  # Ensures that this stage runs after CodeAnalysis
     jobs:
       - job: SnykScan
         steps:
           - script: |
               curl -o- https://raw.githubusercontent.com/snyk/snyk/master/install.sh | bash
-              snyk auth $(SNYK_TOKEN)  # Ensure SNYK_TOKEN is securely set in the Variable Group
+              snyk auth $(SNYK_TOKEN)
               snyk test --all-projects
             displayName: 'Run Snyk Dependency Scan'
 
   - stage: Package
-    dependsOn: DependencyScan
+    dependsOn: DependencyScan  # Ensures that this stage runs after DependencyScan
     jobs:
       - job: PackageArtifact
         steps:
