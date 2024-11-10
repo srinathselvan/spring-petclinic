@@ -39,10 +39,11 @@ stages:
     jobs:
       - job: SonarCloudAnalysis
         steps:
+          # Step 1: Prepare SonarCloud Analysis
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'SonarCloud'
-              organization: 'srinathselvan '
+              SonarCloud: 'SonarCloud'  # Make sure this matches the service connection name you created
+              organization: 'srinathselvan'
               projectKey: 'srinathselvan_spring-petclinic'
               projectName: 'spring-petclinic'
               scannerMode: 'CLI'
@@ -54,15 +55,17 @@ stages:
                 sonar.organization=srinathselvan
                 sonar.projectKey=srinathselvan_spring-petclinic
                 sonar.host.url=https://sonarcloud.io
-                sonar.login=$(SONAR_TOKEN)
+                sonar.login=$(SONAR_TOKEN)  # Ensure SONAR_TOKEN is defined in the Variable Group
+
             displayName: 'Prepare SonarCloud Analysis'
 
+          # Step 2: Run SonarCloud Analysis
           - script: |
               mvn sonar:sonar \
                 -Dsonar.organization=srinathselvan \
                 -Dsonar.projectKey=srinathselvan_spring-petclinic \
                 -Dsonar.host.url=https://sonarcloud.io \
-                -Dsonar.login=$(SONAR_TOKEN)
+                -Dsonar.login=$(SONAR_TOKEN)  # Ensure SONAR_TOKEN is properly set
             displayName: 'Run SonarCloud Analysis'
 
   - stage: DependencyScan
@@ -72,7 +75,7 @@ stages:
         steps:
           - script: |
               curl -o- https://raw.githubusercontent.com/snyk/snyk/master/install.sh | bash
-              snyk auth $(SNYK_TOKEN)
+              snyk auth $(SNYK_TOKEN)  # Ensure SNYK_TOKEN is securely set in the Variable Group
               snyk test --all-projects
             displayName: 'Run Snyk Dependency Scan'
 
