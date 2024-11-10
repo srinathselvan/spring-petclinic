@@ -15,12 +15,14 @@ stages:
     jobs:
       - job: MavenBuild
         steps:
-          - task: UseJavaVersion@1
-            inputs:
-              versionSpec: '11'
-              jdkArchitecture: 'x64'
-            displayName: 'Set up Java 11'
+          # Step 1: Manually Install Java 11
+          - script: |
+              sudo apt update
+              sudo apt install -y openjdk-11-jdk
+              java -version  # Verify installation
+            displayName: 'Install Java 11'
 
+          # Step 2: Build the project with Maven
           - script: mvn -B clean compile
             displayName: 'Build with Maven'
 
