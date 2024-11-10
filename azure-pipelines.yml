@@ -4,7 +4,7 @@ trigger:
       - main  # Define the branch that triggers the pipeline
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use a single hosted agent
+  vmImage: 'ubuntu-latest'  # Use a single hosted agent (no parallelism)
 
 variables:
   - group: api-token
