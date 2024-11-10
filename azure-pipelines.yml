@@ -1,0 +1,88 @@
+trigger:
+  branches:
+    include:
+      - main  # Define the branch that triggers the pipeline
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Reference the variable group to securely access tokens
+  - group: DevSecOpsVariables
+
+stages:
+  - stage: Build
+    jobs:
+      - job: MavenBuild
+        steps:
+          - task: UseJavaVersion@1
+            inputs:
+              versionSpec: '11'
+              jdkArchitecture: 'x64'
+            displayName: 'Set up Java 11'
+
+          - script: mvn -B clean compile
+            displayName: 'Build with Maven'
+
+  - stage: Test
+    dependsOn: Build
+    jobs:
+      - job: MavenTest
+        steps:
+          - script: mvn -B test
+            displayName: 'Run Tests'
+
+  - stage: CodeAnalysis
+    dependsOn: Test
+    jobs:
+      - job: SonarCloudAnalysis
+        steps:
+          - task: SonarCloudPrepare@1
+            inputs:
+              SonarCloud: 'https://sonarcloud.io'
+              organization: '<your-sonarcloud-organization>'
+              projectKey: '<your-project-key>'
+              projectName: '<your-project-name>'
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: '<your-project-key>'
+              cliProjectName: '<your-project-name>'
+              cliProjectVersion: '1.0'
+              extraProperties: |
+                sonar.organization=<your-sonarcloud-organization>
+                sonar.projectKey=<your-project-key>
+                sonar.host.url=https://sonarcloud.io
+                sonar.login=$(SONAR_TOKEN)
+            displayName: 'Prepare SonarCloud Analysis'
+
+          - script: |
+              mvn sonar:sonar \
+                -Dsonar.organization=<your-sonarcloud-organization> \
+                -Dsonar.projectKey=<your-project-key> \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.login=$(SONAR_TOKEN)
+            displayName: 'Run SonarCloud Analysis'
+
+  - stage: DependencyScan
+    dependsOn: CodeAnalysis
+    jobs:
+      - job: SnykScan
+        steps:
+          - script: |
+              curl -o- https://raw.githubusercontent.com/snyk/snyk/master/install.sh | bash
+              snyk auth $(SNYK_TOKEN)
+              snyk test --all-projects
+            displayName: 'Run Snyk Dependency Scan'
+
+  - stage: Package
+    dependsOn: DependencyScan
+    jobs:
+      - job: PackageArtifact
+        steps:
+          - script: mvn -B package
+            displayName: 'Package Application'
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)/target/*.jar'
+              artifactName: 'java-maven-app'
+            displayName: 'Publish Artifact'
