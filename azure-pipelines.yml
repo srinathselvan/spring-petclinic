@@ -41,7 +41,7 @@ stages:
         steps:
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'https://sonarcloud.io'
+              SonarCloud: 'SonarCloud'
               organization: 'srinathselvan '
               projectKey: 'srinathselvan_spring-petclinic'
               projectName: 'spring-petclinic'
