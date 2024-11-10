@@ -8,7 +8,7 @@ pool:
 
 variables:
   # Reference the variable group to securely access tokens
-  - group: DevSecOpsVariables
+  - group: api-token
 
 stages:
   - stage: Build
@@ -40,25 +40,25 @@ stages:
           - task: SonarCloudPrepare@1
             inputs:
               SonarCloud: 'https://sonarcloud.io'
-              organization: '<your-sonarcloud-organization>'
-              projectKey: '<your-project-key>'
-              projectName: '<your-project-name>'
+              organization: 'srinathselvan '
+              projectKey: 'srinathselvan_spring-petclinic'
+              projectName: 'spring-petclinic'
               scannerMode: 'CLI'
               configMode: 'manual'
-              cliProjectKey: '<your-project-key>'
-              cliProjectName: '<your-project-name>'
+              cliProjectKey: 'srinathselvan_spring-petclinic'
+              cliProjectName: 'spring-petclinic'
               cliProjectVersion: '1.0'
               extraProperties: |
-                sonar.organization=<your-sonarcloud-organization>
-                sonar.projectKey=<your-project-key>
+                sonar.organization=srinathselvan
+                sonar.projectKey=srinathselvan_spring-petclinic
                 sonar.host.url=https://sonarcloud.io
                 sonar.login=$(SONAR_TOKEN)
             displayName: 'Prepare SonarCloud Analysis'
 
           - script: |
               mvn sonar:sonar \
-                -Dsonar.organization=<your-sonarcloud-organization> \
-                -Dsonar.projectKey=<your-project-key> \
+                -Dsonar.organization=srinathselvan \
+                -Dsonar.projectKey=srinathselvan_spring-petclinic \
                 -Dsonar.host.url=https://sonarcloud.io \
                 -Dsonar.login=$(SONAR_TOKEN)
             displayName: 'Run SonarCloud Analysis'
