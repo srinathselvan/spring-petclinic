@@ -10,28 +10,30 @@ variables:
   - group: api-token
 
 stages:
-  - stage: Build
+  - stage: BuildAndTest
     jobs:
-      - job: MavenBuild
+      - job: MavenBuildAndTest
         steps:
-          - script: |
-              sudo apt update
-              sudo apt install -y openjdk-11-jdk
-              java -version  # Verify installation
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '11'
+              jdkArchitectureOption: 'x64'
             displayName: 'Install Java 11'
-          - script: mvn -B clean compile
-            displayName: 'Build with Maven'
-
-  - stage: Test
-    dependsOn: Build  # Ensures that this stage runs after Build
-    jobs:
-      - job: MavenTest
-        steps:
-          - script: mvn -B test
-            displayName: 'Run Tests'
+          
+          - task: Maven@4
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 'default'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/TEST-*.xml'
+              goals: 'clean package'
+            displayName: 'Build and Test with Maven'
 
   - stage: CodeAnalysis
-    dependsOn: Test  # Ensures that this stage runs after Test
+    dependsOn: BuildAndTest  # Ensures that this stage runs after BuildAndTest
     jobs:
       - job: SonarCloudAnalysis
         steps:
@@ -77,8 +79,15 @@ stages:
     jobs:
       - job: PackageArtifact
         steps:
-          - script: mvn -B package
+          - task: Maven@4
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'package'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 'default'
+              jdkArchitectureOption: 'x64'
             displayName: 'Package Application'
+          
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: '$(System.DefaultWorkingDirectory)/target/*.jar'
