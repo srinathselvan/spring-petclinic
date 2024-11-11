@@ -5,6 +5,7 @@ pipeline {
         // Retrieve SonarCloud token and Snyk token from Jenkins credentials
         SONAR_TOKEN = credentials('sonarcloud-token')
         SNYK_TOKEN = credentials('snyk-token')
+        NVM_DIR = "${env.HOME}/.nvm"
     }
 
     tools {
@@ -45,19 +46,20 @@ pipeline {
         stage('Snyk Dependency Scan') {
             steps {
                 script {
-                    // Install Node.js and Snyk using nvm
+                    // Install Node.js, nvm, and Snyk in the same shell environment
                     sh """
                         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-                        export NVM_DIR="\$HOME/.nvm"
-                        [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
+                        export NVM_DIR="${NVM_DIR}"
+                        [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
                         nvm install node
                         nvm use node
-                        node -v  # Check Node.js version to verify installation
-                        npm -v   # Check npm version to verify installation
+                        export PATH="\$NVM_DIR/versions/node/$(nvm version)/bin:\$PATH"
+                        node -v  # Check Node.js version
+                        npm -v   # Check npm version
                         npm install -g snyk
+                        snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
+                        snyk test  # Run Snyk security scan
                     """
-                    sh 'snyk auth ${SNYK_TOKEN}'  // Authenticate with the Snyk token
-                    sh 'snyk test'  // Run the security test on dependencies
                 }
             }
         }
