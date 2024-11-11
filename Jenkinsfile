@@ -45,8 +45,8 @@ pipeline {
         stage('Snyk Dependency Scan') {
             steps {
                 script {
-                    // Install Snyk and perform vulnerability scanning
-                    sh 'curl -o- https://raw.githubusercontent.com/snyk/snyk/master/install.sh | bash'
+                    // Install Snyk via npm and perform vulnerability scanning
+                    sh 'npm install -g snyk'
                     sh 'snyk auth ${SNYK_TOKEN}'  // Authenticate with the Snyk token
                     sh 'snyk test'  // Run the security test on dependencies
                 }
