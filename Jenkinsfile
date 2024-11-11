@@ -30,7 +30,12 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('SonarCloud') {  // Use the SonarQube environment configured in Jenkins
-                        sh 'mvn sonar:sonar -Dsonar.organization=<srinathselvan> -Dsonar.projectKey=<srinathselvan_spring-petclinic> -Dsonar.login=$SONAR_TOKEN'
+                        sh """
+                            mvn sonar:sonar \
+                                -Dsonar.organization=srinathselvan \
+                                -Dsonar.projectKey=srinathselvan_spring-petclinic \
+                                -Dsonar.login=${SONAR_TOKEN}
+                        """
                     }
                 }
             }
@@ -42,7 +47,7 @@ pipeline {
                 script {
                     // Install Snyk and perform vulnerability scanning
                     sh 'curl -o- https://raw.githubusercontent.com/snyk/snyk/master/install.sh | bash'
-                    sh 'snyk auth $SNYK_TOKEN'  // Authenticate with the Snyk token
+                    sh 'snyk auth ${SNYK_TOKEN}'  // Authenticate with the Snyk token
                     sh 'snyk test'  // Run the security test on dependencies
                 }
             }
