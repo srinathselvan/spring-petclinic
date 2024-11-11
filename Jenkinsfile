@@ -47,19 +47,19 @@ pipeline {
             steps {
                 script {
                     // Install Node.js, nvm, and Snyk in the same shell environment
-                    sh """
+                    sh '''#!/bin/bash
                         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
                         export NVM_DIR="${NVM_DIR}"
                         [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
                         nvm install node
                         nvm use node
-                        export PATH="\$NVM_DIR/versions/node/$(nvm version)/bin:\$PATH"
+                        export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
                         node -v  # Check Node.js version
                         npm -v   # Check npm version
                         npm install -g snyk
                         snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
                         snyk test  # Run Snyk security scan
-                    """
+                    '''
                 }
             }
         }
