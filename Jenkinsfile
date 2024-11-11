@@ -58,7 +58,7 @@ pipeline {
                         npm -v   # Check npm version
                         npm install -g snyk
                         snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
-                        snyk test  # Run Snyk security scan
+                        snyk test --all-projects --json > snyk-report.json  # Run Snyk security scan and save the report
                     '''
                 }
             }
@@ -86,6 +86,22 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed. Check logs for errors.'
+        }
+        unstable {
+            script {
+                // Read the Snyk report and handle the findings
+                def snykReport = readFile('snyk-report.json')
+                def snykJson = readJSON text: snykReport
+                def issuesFound = snykJson.issues.size() > 0
+
+                if (issuesFound) {
+                    // Optionally, you can fail the build or just mark it unstable
+                    currentBuild.result = 'UNSTABLE'  // Mark build as unstable if vulnerabilities are found
+                    echo "Vulnerabilities found in the project!"
+                    archiveArtifacts artifacts: 'snyk-report.json', allowEmptyArchive: true  // Archive the snyk report
+                    // You can also add email notifications or alert mechanisms here
+                }
+            }
         }
     }
 }
