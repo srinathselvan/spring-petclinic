@@ -19,8 +19,8 @@ pipeline {
         stage('Build and Test') {
             steps {
                 script {
-                    // Run Maven build and tests with Checkstyle disabled
-                    sh 'mvn clean package -Dmaven.checkstyle.skip=true'
+                    // Run Maven build and tests with Checkstyle disabled explicitly
+                    sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
             }
@@ -36,7 +36,8 @@ pipeline {
                                 -Dsonar.organization=srinathselvan \
                                 -Dsonar.projectKey=srinathselvan_spring-petclinic \
                                 -Dsonar.login=${SONAR_TOKEN} \
-                                -Dmaven.checkstyle.skip=true
+                                -Dmaven.checkstyle.skip=true \
+                                -Dcheckstyle.skip=true
                         """
                     }
                 }
@@ -91,8 +92,8 @@ pipeline {
         stage('Package and Archive Artifact') {
             steps {
                 script {
-                    // Run Maven package to generate the .jar file with Checkstyle disabled
-                    sh 'mvn package -Dmaven.checkstyle.skip=true'
+                    // Run Maven package to generate the .jar file with Checkstyle disabled explicitly
+                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false  // Archive the .jar file
                 }
             }
