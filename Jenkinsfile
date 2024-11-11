@@ -43,26 +43,27 @@ pipeline {
         }
 
         // Stage for running Snyk security vulnerability scan
-        stage('Snyk Dependency Scan') {
-            steps {
-                script {
-                    // Install Node.js, nvm, and Snyk in the same shell environment
-                    sh '''#!/bin/bash
-                        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
-                        export NVM_DIR="${NVM_DIR}"
-                        [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
-                        nvm install node
-                        nvm use node
-                        export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
-                        node -v  # Check Node.js version
-                        npm -v   # Check npm version
-                        npm install -g snyk
-                        snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
-                        snyk test --all-projects --json > snyk-report.json  # Run Snyk security scan and save the report
-                    '''
-                }
-            }
+stage('Snyk Dependency Scan') {
+    steps {
+        script {
+            // Install Node.js, nvm, and Snyk in the same shell environment
+            sh '''#!/bin/bash
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+                export NVM_DIR="${NVM_DIR}"
+                [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+                nvm install node
+                nvm use node
+                export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+                node -v  # Check Node.js version
+                npm -v   # Check npm version
+                npm install -g snyk
+                snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
+                snyk test --all-projects --json || exit 1  # Run Snyk security scan and fail the build on vulnerabilities
+            '''
         }
+    }
+}
+
 
         // Stage for packaging and archiving the build artifact
         stage('Package and Archive Artifact') {
