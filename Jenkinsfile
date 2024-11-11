@@ -48,21 +48,44 @@ stage('Snyk Dependency Scan') {
         script {
             // Install Node.js, nvm, and Snyk in the same shell environment
             sh '''#!/bin/bash
+                # Install NVM
                 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+                # Set NVM_DIR and source nvm.sh
                 export NVM_DIR="${NVM_DIR}"
                 [ -s "${NVM_DIR}/nvm.sh" ] && . "${NVM_DIR}/nvm.sh"
+
+                # Install and use Node.js
                 nvm install node
                 nvm use node
                 export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
-                node -v  # Check Node.js version
-                npm -v   # Check npm version
+
+                # Check Node.js and npm versions
+                node -v  # Ensure Node.js is installed
+                npm -v   # Ensure npm is installed
+
+                # Install Snyk
                 npm install -g snyk
-                snyk auth ${SNYK_TOKEN}  # Authenticate with Snyk token
-                snyk test --all-projects --json || exit 1  # Run Snyk security scan and fail the build on vulnerabilities
+
+                # Authenticate with Snyk using the provided token
+                snyk auth ${SNYK_TOKEN}
+
+                # Run the security scan on all projects and output results in JSON format
+                snyk test --all-projects --json > snyk-report.json
+
+                # Parse the JSON output to check if there are any issues
+                if [ $(jq '.vulnerabilities | length' snyk-report.json) -gt 0 ]; then
+                    echo "Vulnerabilities found:"
+                    cat snyk-report.json  # Output vulnerabilities for debugging
+                    exit 1  # Fail the build if vulnerabilities are found
+                else
+                    echo "No vulnerabilities found."
+                fi
             '''
         }
     }
 }
+
 
 
         // Stage for packaging and archiving the build artifact
