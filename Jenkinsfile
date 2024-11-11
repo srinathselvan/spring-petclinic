@@ -30,7 +30,7 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('SonarCloud') {  // Use the SonarQube environment configured in Jenkins
-                        sh 'mvn sonar:sonar -Dsonar.organization=<srinathselvan> -Dsonar.projectKey=<spring-petclinic> -Dsonar.login=$SONAR_TOKEN'
+                        sh 'mvn sonar:sonar -Dsonar.organization=<srinathselvan> -Dsonar.projectKey=<srinathselvan_spring-petclinic> -Dsonar.login=$SONAR_TOKEN'
                     }
                 }
             }
