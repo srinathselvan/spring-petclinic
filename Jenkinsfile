@@ -51,6 +51,9 @@ pipeline {
                         export NVM_DIR="\$HOME/.nvm"
                         [ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"
                         nvm install node
+                        nvm use node
+                        node -v  # Check Node.js version to verify installation
+                        npm -v   # Check npm version to verify installation
                         npm install -g snyk
                     """
                     sh 'snyk auth ${SNYK_TOKEN}'  // Authenticate with the Snyk token
