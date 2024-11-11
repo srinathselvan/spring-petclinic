@@ -18,7 +18,6 @@ pipeline {
         stage('Build and Test') {
             steps {
                 script {
-                    // Run Maven build and tests
                     sh 'mvn clean package'
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
@@ -29,7 +28,7 @@ pipeline {
         stage('SonarCloud Analysis') {
             steps {
                 script {
-                    withSonarQubeEnv('SonarCloud') {  // Use the SonarQube environment configured in Jenkins
+                    withSonarQubeEnv('SonarCloud') {
                         sh """
                             mvn sonar:sonar \
                                 -Dsonar.organization=srinathselvan \
@@ -41,14 +40,21 @@ pipeline {
             }
         }
 
-        // Stage for running Snyk security vulnerability scan
+        // Stage for installing Snyk and running a dependency scan
         stage('Snyk Dependency Scan') {
             steps {
                 script {
-                    // Install Snyk via npm and perform vulnerability scanning
-                    sh 'npm install -g snyk'
-                    sh 'snyk auth ${SNYK_TOKEN}'  // Authenticate with the Snyk token
-                    sh 'snyk test'  // Run the security test on dependencies
+                    // Install nvm, Node.js, and Snyk
+                    sh """
+                        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+                        export NVM_DIR="\$HOME/.nvm"
+                        [ -s "\$NVM_DIR/nvm.sh" ] && \. "\$NVM_DIR/nvm.sh"
+                        nvm install 14
+                        npm install -g snyk
+                    """
+                    // Authenticate and run Snyk test
+                    sh 'snyk auth ${SNYK_TOKEN}'
+                    sh 'snyk test'
                 }
             }
         }
@@ -57,9 +63,8 @@ pipeline {
         stage('Package and Archive Artifact') {
             steps {
                 script {
-                    // Run Maven package to generate the .jar file
                     sh 'mvn package'
-                    archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false  // Archive the .jar file
+                    archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
                 }
             }
         }
