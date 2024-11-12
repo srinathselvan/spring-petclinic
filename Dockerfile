@@ -1,30 +1,29 @@
-# Use your custom image for the build process
-FROM srinathselvan/my-maven-jdk-17 AS build
+# Use a base image with OpenJDK 17 and Maven pre-installed
+FROM maven:3.8.5-openjdk-17-slim AS build
 
-# Set the working directory in the container
-WORKDIR /app
+# Set the working directory inside the container
+WORKDIR /workspace
 
-# Copy the pom.xml and source code into the container
-COPY pom.xml .
-COPY src ./src
+# Install necessary tools (e.g., Docker CLI) if needed in the container
+RUN apt-get update && apt-get install -y \
+    curl \
+    jq \
+    sudo \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
 
-# Build the application
-RUN mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true
+# Install Node.js and NVM for Snyk (since you are using Node.js in the 'Snyk Dependency Scan' stage)
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+ENV NVM_DIR /root/.nvm
+RUN ["/bin/bash", "-c", ". $NVM_DIR/nvm.sh && nvm install node"]
 
-# Package the application
-RUN mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests
+# Set up the Maven environment
+ENV MAVEN_HOME /usr/share/maven
+ENV PATH $MAVEN_HOME/bin:$PATH
 
-# Final image with the runtime environment
-FROM openjdk:17-jdk-slim
+# Ensure the container runs as a non-root user
+RUN useradd -m jenkins && chown -R jenkins:jenkins /workspace
+USER jenkins
 
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the packaged JAR file from the build stage
-COPY --from=build /app/target/*.jar app.jar
-
-# Expose the port on which the app will run
-EXPOSE 8080
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Set the default command
+CMD ["mvn", "-v"]
