@@ -6,6 +6,10 @@ pipeline {
         SONAR_TOKEN = credentials('sonarcloud-token')
         SNYK_TOKEN = credentials('snyk-token')
         NVM_DIR = "${env.HOME}/.nvm"
+		
+		// New Docker and ACR environment variables
+        ACR_NAME = 'securecicdregistry'
+        ACR_REPO = 'securecicdregistry.azurecr.io/secure-ci-cd-app'
     }
 
     tools {
@@ -98,9 +102,25 @@ pipeline {
                 }
             }
         }
+		
+		stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image with the Git commit hash as the tag
+                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
+
+                    // Login to Azure Container Registry (ACR)
+                    withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
+                        sh "az acr login --name $ACR_NAME --username $ACR_USERNAME --password $ACR_PASSWORD"
+                    }
+
+                    // Push Docker image to ACR
+                    sh "docker push $ACR_REPO:$GIT_COMMIT"
+                }
+            }
+        }
     }
 
-    // Post build actions
     post {
         always {
             cleanWs()  // Clean workspace after each build
@@ -113,16 +133,14 @@ pipeline {
         }
         unstable {
             script {
-                // Read the Snyk report and handle the findings
                 def snykReport = readFile('snyk-report.json')
                 def snykJson = readJSON text: snykReport
                 def issuesFound = snykJson.issues.size() > 0
 
                 if (issuesFound) {
-                    // Optionally, you can fail the build or just mark it unstable
-                    currentBuild.result = 'UNSTABLE'  // Mark build as unstable if vulnerabilities are found
+                    currentBuild.result = 'UNSTABLE'
                     echo "Vulnerabilities found in the project!"
-                    archiveArtifacts artifacts: 'snyk-report.json', allowEmptyArchive: true  // Archive the snyk report
+                    archiveArtifacts artifacts: 'snyk-report.json', allowEmptyArchive: true
                 }
             }
         }
