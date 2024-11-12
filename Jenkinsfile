@@ -28,7 +28,7 @@ pipeline {
         stage('Build and Test') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'
+                    image 'maven:3.8.5-openjdk-17-slim'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -52,7 +52,7 @@ pipeline {
         stage('SonarCloud Analysis') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'
+                    image 'maven:3.8.5-openjdk-17-slim'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -106,7 +106,7 @@ pipeline {
         stage('Package and Archive Artifact') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'
+                    image 'maven:3.8.5-openjdk-17-slim'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
