@@ -16,7 +16,6 @@ pipeline {
 
     stages {
         stage('Checkout Code') {
-            agent { label 'any' }  // Replace with the correct label for the agent
             steps {
                 script {
                     checkout scm  // Ensures that the Git repository is checked out
@@ -149,8 +148,7 @@ pipeline {
 
     post {
         always {
-            // Use an appropriate agent for workspace cleanup (if necessary)
-            agent { label 'your-agent-label' }  // Replace with the correct label for the agent
+            // Use the default workspace cleanup
             steps {
                 cleanWs()
             }
