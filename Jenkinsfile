@@ -15,6 +15,16 @@ pipeline {
     }
 
     stages {
+        // Add the Verify Docker stage at the beginning
+        stage('Verify Docker') {
+            agent any
+            steps {
+                script {
+                    sh 'docker --version'
+                }
+            }
+        }
+
         stage('Build and Test') {
             agent {
                 docker {
@@ -122,12 +132,12 @@ pipeline {
             agent {
                 docker {
                     image 'docker:20.10.7'
-                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root'
                 }
             }
             steps {
                 script {
-                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
+                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT spring-petclinic/'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
