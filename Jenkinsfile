@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // Do not use a global agent
+    agent any  // Do not use a global agent
 
     environment {
         ACR_NAME = 'securecicdregistry'
