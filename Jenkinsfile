@@ -1,17 +1,30 @@
 pipeline {
     agent none  // Do not use a global agent
 
+    environment {
+        ACR_NAME = 'securecicdregistry'
+        ACR_REPO = 'securecicdregistry.azurecr.io/secure-ci-cd-app'
+        SONAR_TOKEN = credentials('sonarcloud-token')
+        SNYK_TOKEN = credentials('snyk-token')
+        NVM_DIR = "${env.HOME}/.nvm"
+    }
+
+    tools {
+        jdk 'JDK11'
+        maven 'Maven'
+    }
+
     stages {
         stage('Build and Test') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'  // Use custom Maven Docker image with JDK 17
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
                 script {
-                    // Ensure Maven is available in the container (use a known Maven image here)
+                    // Compile and run tests
                     sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
@@ -21,18 +34,18 @@ pipeline {
         stage('SonarCloud Analysis') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'  // Custom Maven Docker image with JDK 17 for this stage
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
                 script {
-                    withSonarQubeEnv('SonarCloud') {  // Use SonarQube environment configured in Jenkins
+                    withSonarQubeEnv('SonarCloud') {  // SonarQube environment configured in Jenkins
                         sh """
                             mvn sonar:sonar \
                                 -Dsonar.organization=srinathselvan \
                                 -Dsonar.projectKey=srinathselvan_spring-petclinic \
-                                -Dsonar.login=${SONAR_TOKEN} \
+                                -Dsonar.login=$SONAR_TOKEN \
                                 -Dmaven.checkstyle.skip=true \
                                 -Dcheckstyle.skip=true
                         """
@@ -44,7 +57,7 @@ pipeline {
         stage('Snyk Dependency Scan') {
             agent {
                 docker {
-                    image 'node:16'  // Node.js Docker image for this stage
+                    image 'node:16'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -58,7 +71,7 @@ pipeline {
                         nvm use node
                         export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
                         npm install -g snyk
-                        snyk auth ${SNYK_TOKEN}
+                        snyk auth $SNYK_TOKEN
                         snyk test --all-projects --json > snyk-report.json
                         if [ $(jq '.vulnerabilities | length' snyk-report.json) -gt 0 ]; then
                             echo "Vulnerabilities found:"
@@ -75,7 +88,7 @@ pipeline {
         stage('Package and Archive Artifact') {
             agent {
                 docker {
-                    image 'srinathselvan/my-maven-jdk-17'  // Custom Maven Docker image with JDK 17
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -90,7 +103,7 @@ pipeline {
         stage('Build Docker Image') {
             agent {
                 docker {
-                    image 'docker:20.10.7'  // Docker CLI image for building Docker images
+                    image 'docker:20.10.7'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -98,7 +111,7 @@ pipeline {
                 script {
                     sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
-                        sh "az acr login --name $ACR_NAME --username $ACR_USERNAME --password $ACR_PASSWORD"
+                        sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
                     sh "docker push $ACR_REPO:$GIT_COMMIT"
                 }
@@ -120,7 +133,7 @@ pipeline {
             script {
                 def snykReport = readFile('snyk-report.json')
                 def snykJson = readJSON text: snykReport
-                def issuesFound = snykJson.issues.size() > 0
+                def issuesFound = snykJson.vulnerabilities.size() > 0
 
                 if (issuesFound) {
                     currentBuild.result = 'UNSTABLE'
