@@ -137,7 +137,9 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT spring-petclinic/'
+					sh 'pwd'
+					sh 'ls -l'
+                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT ~/spring-petclinic/'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
