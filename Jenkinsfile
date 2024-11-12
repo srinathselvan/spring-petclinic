@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // Do not use a global agent
+    agent none  // Set no default agent; each stage will specify its agent
 
     environment {
         ACR_NAME = 'securecicdregistry'
@@ -16,7 +16,7 @@ pipeline {
 
     stages {
         stage('Checkout Code') {
-            agent { label 'master' }  // Specify an agent for this stage
+            agent { label 'any' }  // Replace with the correct label for the agent
             steps {
                 script {
                     checkout scm  // Ensures that the Git repository is checked out
@@ -149,7 +149,9 @@ pipeline {
 
     post {
         always {
-            node('master') {
+            // Use an appropriate agent for workspace cleanup (if necessary)
+            agent { label 'your-agent-label' }  // Replace with the correct label for the agent
+            steps {
                 cleanWs()
             }
         }
