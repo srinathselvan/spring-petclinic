@@ -160,6 +160,8 @@ pipeline {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 						sh '''
+							# Run kubectl commands using the proper entrypoint
+							docker run --rm --entrypoint="" bitnami/kubectl:1.23.0 /bin/bash -c "
 							# Deploy to AKS
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/deployment.yaml
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/service.yaml
