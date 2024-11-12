@@ -150,35 +150,24 @@ pipeline {
 
         // New 'Deploy to AKS' stage
 		stage('Deploy to AKS') {
+			agent {
+				docker {
+					image 'bitnami/kubectl:1.23.0'  // Choose an appropriate image with kubectl pre-installed
+					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+				}
+			}
 			steps {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 						sh '''
-							# Install kubectl if not already available
-							if ! command -v kubectl &> /dev/null
-							then
-								echo "kubectl could not be found, installing..."
-								curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl
-								chmod +x ./kubectl
-								
-								# Move kubectl to a user-specific directory
-								mkdir -p $HOME/.local/bin
-								mv ./kubectl $HOME/.local/bin/kubectl
-							else
-								echo "kubectl is already installed"
-							fi
-							
-							# Add the user-specific bin directory to the PATH
-							export PATH=$HOME/.local/bin:$PATH
-							
-							# Now deploy to AKS
+							# Deploy to AKS
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/deployment.yaml
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/service.yaml
 						'''
 					}
 				}
 			}
-}
+		}
 
 
     }
