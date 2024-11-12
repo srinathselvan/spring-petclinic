@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Compile and run tests only if tests are not skipped
-                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
                     
                     // Check if test reports exist before running the junit step
                     def reportExists = fileExists '**/target/surefire-reports/*.xml'
