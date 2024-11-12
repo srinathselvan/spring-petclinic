@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Compile and run tests
-					sh 'mvn clean package -Dmaven.test.skip=true'
+                    sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
             }
@@ -109,11 +109,11 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'sudo docker build -t $ACR_REPO:$GIT_COMMIT .'
+                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
-                    sh "sudo docker push $ACR_REPO:$GIT_COMMIT"
+                    sh "docker push $ACR_REPO:$GIT_COMMIT"
                 }
             }
         }
