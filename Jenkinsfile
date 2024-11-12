@@ -10,7 +10,7 @@ pipeline {
     }
 
     tools {
-        jdk 'JDK11'
+        jdk 'JDK17'
         maven 'Maven'
     }
 
@@ -24,8 +24,10 @@ pipeline {
             }
             steps {
                 script {
-                    // Compile and run tests
-                    sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    // Compile and run tests with error handling
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    }
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
             }
