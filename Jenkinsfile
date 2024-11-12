@@ -5,12 +5,13 @@ pipeline {
         stage('Build and Test') {
             agent {
                 docker {
-                    image 'docker:20.10.7'  // Docker image with Docker CLI
-                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'  // Docker socket mount
+                    image 'maven:3.8.4-jdk-11'  // Use Maven Docker image
+                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
                 script {
+                    // Ensure Maven is available in the container (use a known Maven image here)
                     sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
@@ -20,7 +21,7 @@ pipeline {
         stage('SonarCloud Analysis') {
             agent {
                 docker {
-                    image 'maven:3.8.4-jdk-11'  // Use Maven Docker image for this stage
+                    image 'maven:3.8.4-jdk-11'  // Maven Docker image for this stage
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -43,7 +44,7 @@ pipeline {
         stage('Snyk Dependency Scan') {
             agent {
                 docker {
-                    image 'node:16'  // Use Node.js Docker image for this stage
+                    image 'node:16'  // Node.js Docker image for this stage
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -74,7 +75,7 @@ pipeline {
         stage('Package and Archive Artifact') {
             agent {
                 docker {
-                    image 'maven:3.8.4-jdk-11'  // Use Maven Docker image
+                    image 'maven:3.8.4-jdk-11'  // Maven Docker image
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
