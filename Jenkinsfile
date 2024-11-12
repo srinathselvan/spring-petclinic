@@ -35,7 +35,7 @@ pipeline {
             steps {
                 script {
                     // Compile and run tests only if tests are not skipped
-                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
+                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     
                     // Check if test reports exist before running the junit step
                     def reportExists = fileExists '**/target/surefire-reports/*.xml'
@@ -113,7 +113,7 @@ pipeline {
             steps {
                 script {
                     // Add -DskipTests to ensure tests are skipped during packaging
-                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
+                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
                     
                     // Check if the .jar files are created in the target directory
                     def jarFiles = sh(script: 'ls target/*.jar', returnStdout: true).trim()
