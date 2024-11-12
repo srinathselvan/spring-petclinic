@@ -127,11 +127,11 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
+                    sh 'sudo docker build -t $ACR_REPO:$GIT_COMMIT .'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
-                    sh "docker push $ACR_REPO:$GIT_COMMIT"
+                    sh " sudo docker push $ACR_REPO:$GIT_COMMIT"
                 }
             }
         }
