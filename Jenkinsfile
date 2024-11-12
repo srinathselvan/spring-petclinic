@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // Set no default agent; each stage will specify its agent
+    agent none  // Do not use a global agent
 
     environment {
         ACR_NAME = 'securecicdregistry'
@@ -15,15 +15,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                script {
-                    checkout scm  // Ensures that the Git repository is checked out
-                    echo "Git commit hash: ${env.GIT_COMMIT}"
-                }
-            }
-        }
-
         stage('Build and Test') {
             agent {
                 docker {
@@ -148,10 +139,7 @@ pipeline {
 
     post {
         always {
-            // Use the default workspace cleanup
-            steps {
-                cleanWs()
-            }
+            cleanWs()
         }
         success {
             echo 'Pipeline completed successfully!'
