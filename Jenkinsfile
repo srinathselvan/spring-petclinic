@@ -10,7 +10,7 @@ pipeline {
     }
 
     tools {
-        jdk 'JDK11'
+        jdk 'JDK17'
         maven 'Maven'
     }
 
@@ -24,11 +24,17 @@ pipeline {
             }
             steps {
                 script {
-                    // Compile and run tests with error handling
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh 'mvn clean install -DskipTests -Dmaven.checkstyle.skip=true'
+                    // Compile and run tests only if tests are not skipped
+                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    
+                    // Check if test reports exist before running the junit step
+                    def reportExists = fileExists '**/target/surefire-reports/*.xml'
+                    
+                    if (reportExists) {
+                        junit '**/target/surefire-reports/*.xml'  // Publish test results if report exists
+                    } else {
+                        echo 'No test reports found. Skipping junit step.'
                     }
-                    junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
             }
         }
@@ -96,8 +102,18 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'mvn clean install -DskipTests -Dmaven.checkstyle.skip=true'
-                    archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
+                    // Add -DskipTests to ensure tests are skipped during packaging
+                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
+                    
+                    // Check if the .jar files are created in the target directory
+                    def jarFiles = sh(script: 'ls target/*.jar', returnStdout: true).trim()
+                    
+                    if (jarFiles) {
+                        archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
+                    } else {
+                        echo "No JAR files found to archive."
+                        currentBuild.result = 'UNSTABLE'  // Mark build as unstable if no JAR files are found
+                    }
                 }
             }
         }
