@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:20.10.7' // Use a Docker image with Docker CLI installed
+            args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
 
     environment {
         // Retrieve SonarCloud token and Snyk token from Jenkins credentials
