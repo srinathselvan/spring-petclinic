@@ -1,11 +1,13 @@
 # Use a base image with OpenJDK 17 and Maven pre-installed
 FROM maven:3.8.5-openjdk-17-slim AS build
 
-# Set the working directory inside the container
-WORKDIR /workspace
+# Check if root user exists; if not, create it
+RUN if ! id -u root >/dev/null 2>&1; then useradd -m root; fi
 
-# Install necessary tools (e.g., Docker CLI) if needed in the container
-USER root  # Use root for installation and Docker setup
+# Switch to root user for installation
+USER root
+
+# Install necessary tools (e.g., Docker CLI) in the container
 RUN apt-get update && apt-get install -y \
     curl \
     jq \
@@ -22,7 +24,7 @@ RUN ["/bin/bash", "-c", ". $NVM_DIR/nvm.sh && nvm install node"]
 ENV MAVEN_HOME /usr/share/maven
 ENV PATH $MAVEN_HOME/bin:$PATH
 
-# Ensure the container runs as a non-root user
+# Switch to a non-root user after installation (e.g., 'jenkins')
 USER jenkins
 
 # Set the default command
