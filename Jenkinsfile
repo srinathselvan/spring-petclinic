@@ -5,7 +5,7 @@ pipeline {
         stage('Build and Test') {
             agent {
                 docker {
-                    image 'maven:3.8.4-jdk-17'  // Use Maven Docker image with JDK 17
+                    image 'srinathselvan/my-maven-jdk-17'  // Use custom Maven Docker image with JDK 17
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -21,7 +21,7 @@ pipeline {
         stage('SonarCloud Analysis') {
             agent {
                 docker {
-                    image 'maven:3.8.4-jdk-17'  // Maven Docker image with JDK 17 for this stage
+                    image 'srinathselvan/my-maven-jdk-17'  // Custom Maven Docker image with JDK 17 for this stage
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -75,7 +75,7 @@ pipeline {
         stage('Package and Archive Artifact') {
             agent {
                 docker {
-                    image 'maven:3.8.4-jdk-17'  // Maven Docker image with JDK 17
+                    image 'srinathselvan/my-maven-jdk-17'  // Custom Maven Docker image with JDK 17
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
