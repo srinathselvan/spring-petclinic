@@ -16,10 +16,10 @@ pipeline {
 
     stages {
         stage('Checkout Code') {
+            agent { label 'master' }  // Specify an agent for this stage
             steps {
                 script {
                     checkout scm  // Ensures that the Git repository is checked out
-                    // You can access the commit hash directly after the checkout
                     echo "Git commit hash: ${env.GIT_COMMIT}"
                 }
             }
@@ -137,19 +137,11 @@ pipeline {
             }
             steps {
                 script {
-                    // Ensure GIT_COMMIT is available
-                    echo "Building Docker image with commit ${env.GIT_COMMIT}"
-
-                    // Build the Docker image using GIT_COMMIT as the tag
-                    sh "docker build -t ${ACR_REPO}:${env.GIT_COMMIT} ."
-                    
-                    // Log in to ACR using credentials
+                    sh 'docker build -t $ACR_REPO:$GIT_COMMIT .'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
-                    
-                    // Push the Docker image to the Azure Container Registry
-                    sh "docker push ${ACR_REPO}:${env.GIT_COMMIT}"
+                    sh "docker push $ACR_REPO:$GIT_COMMIT"
                 }
             }
         }
@@ -157,7 +149,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
         success {
             echo 'Pipeline completed successfully!'
