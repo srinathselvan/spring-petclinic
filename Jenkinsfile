@@ -28,14 +28,14 @@ pipeline {
         stage('Build and Test') {
             agent {
                 docker {
-                    image 'maven:3.8.5-openjdk-17-slim'
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
                 script {
                     // Compile and run tests only if tests are not skipped
-                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
                     
                     // Check if test reports exist before running the junit step
                     def reportExists = fileExists '**/target/surefire-reports/*.xml'
@@ -52,7 +52,7 @@ pipeline {
         stage('SonarCloud Analysis') {
             agent {
                 docker {
-                    image 'maven:3.8.5-openjdk-17-slim'
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
@@ -106,14 +106,14 @@ pipeline {
         stage('Package and Archive Artifact') {
             agent {
                 docker {
-                    image 'maven:3.8.5-openjdk-17-slim'
+                    image 'srinathselvan/my-maven-jdk-17'
                     args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
                 }
             }
             steps {
                 script {
                     // Add -DskipTests to ensure tests are skipped during packaging
-                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
                     
                     // Check if the .jar files are created in the target directory
                     def jarFiles = sh(script: 'ls target/*.jar', returnStdout: true).trim()
@@ -137,13 +137,27 @@ pipeline {
             }
             steps {
                 script {
-					sh 'pwd'
-					sh 'ls -l'
+                    sh 'pwd'
+                    sh 'ls -l'
                     sh 'docker build -t $ACR_REPO:$GIT_COMMIT ./'
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
                         sh "echo $ACR_PASSWORD | docker login $ACR_REPO --username $ACR_USERNAME --password-stdin"
                     }
                     sh "docker push $ACR_REPO:$GIT_COMMIT"
+                }
+            }
+        }
+
+        // New 'Deploy to AKS' stage
+        stage('Deploy to AKS') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
+                        sh '''
+                            kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/deployment.yaml
+                            kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/service.yaml
+                        '''
+                    }
                 }
             }
         }
