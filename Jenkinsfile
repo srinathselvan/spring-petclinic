@@ -26,7 +26,7 @@ pipeline {
                 script {
                     // Compile and run tests with error handling
                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh 'mvn clean package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                        sh 'mvn clean install -DskipTests -Dmaven.checkstyle.skip=true'
                     }
                     junit '**/target/surefire-reports/*.xml'  // Publish test results
                 }
@@ -96,7 +96,7 @@ pipeline {
             }
             steps {
                 script {
-                    sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true'
+                    sh 'mvn clean install -DskipTests -Dmaven.checkstyle.skip=true'
                     archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
                 }
             }
