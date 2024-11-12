@@ -149,7 +149,7 @@ pipeline {
         }
 
         // New 'Deploy to AKS' stage
-        stage('Deploy to AKS') {
+		stage('Deploy to AKS') {
 			steps {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
@@ -160,19 +160,26 @@ pipeline {
 								echo "kubectl could not be found, installing..."
 								curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.23.0/bin/linux/amd64/kubectl
 								chmod +x ./kubectl
-								mv ./kubectl /usr/bin/kubectl
+								
+								# Move kubectl to a user-specific directory
+								mkdir -p $HOME/.local/bin
+								mv ./kubectl $HOME/.local/bin/kubectl
 							else
 								echo "kubectl is already installed"
 							fi
+							
+							# Add the user-specific bin directory to the PATH
+							export PATH=$HOME/.local/bin:$PATH
 							
 							# Now deploy to AKS
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/deployment.yaml
 							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/service.yaml
 						'''
-            }
-        }
-    }
+					}
+				}
+			}
 }
+
 
     }
 
