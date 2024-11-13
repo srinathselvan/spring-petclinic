@@ -159,45 +159,58 @@ pipeline {
             }
         }
 
-	stage('Deploy to AKS') {
-		agent {
-			docker {
-				image 'lachlanevenson/k8s-kubectl:v1.23.0'
-				args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint=""'
+		stage('Deploy to AKS') {
+			agent {
+				docker {
+					image 'lachlanevenson/k8s-kubectl:v1.23.0'
+					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint=""'
+				}
 			}
-		}
-		steps {
-			script {
-				withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-					sh '''
-						# Print environment variables to debug and confirm the home directory
-						echo "Home Directory: $HOME"
-						echo "Current User: $(whoami)"
+			steps {
+				script {
+					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
+						sh '''
+							# Print environment variables to debug and confirm the home directory
+							echo "Home Directory: $HOME"
+							echo "Current User: $(whoami)"
 
-						# Use an absolute path for the .kube directory
-						KUBE_DIR="/var/lib/jenkins/.kube"
-						mkdir -p $KUBE_DIR
-						cp $KUBE_CONFIG $KUBE_DIR/config
+							# Use an absolute path for the .kube directory
+							KUBE_DIR="/var/lib/jenkins/.kube"
+							mkdir -p $KUBE_DIR
+							cp $KUBE_CONFIG $KUBE_DIR/config
 
-						# Ensure kubelogin is available
-						if ! command -v kubelogin &> /dev/null
-						then
-							curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.tar.gz
-							tar -xvzf kubelogin-linux-amd64.tar.gz
-							mv kubelogin /usr/local/bin/
-						fi
+							# Ensure kubelogin is available
+							if ! command -v kubelogin &> /dev/null
+							then
+								echo "kubelogin not found, downloading..."
 
-						# Use kubelogin for authentication to AKS
-						kubelogin -kubeconfig $KUBE_DIR/config
+								# Download kubelogin zip file
+								curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.zip
 
-						# Apply Kubernetes manifests
-						kubectl apply -f k8s/deployment.yaml
-						kubectl apply -f k8s/service.yaml
-					'''
+								# Check if the file was downloaded correctly (size check)
+								if [ ! -f "kubelogin-linux-amd64.zip" ]; then
+									echo "Failed to download kubelogin zip file."
+									exit 1
+								fi
+
+								# Unzip the file
+								unzip kubelogin-linux-amd64.zip
+								mv kubelogin /usr/local/bin/
+							fi
+
+							# Use kubelogin for authentication to AKS
+							kubelogin -kubeconfig $KUBE_DIR/config
+
+							# Apply Kubernetes manifests
+							kubectl apply -f k8s/deployment.yaml
+							kubectl apply -f k8s/service.yaml
+						'''
+					}
 				}
 			}
 		}
-	}
+
+
 
 
     }
