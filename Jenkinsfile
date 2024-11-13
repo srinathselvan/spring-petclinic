@@ -152,7 +152,7 @@ pipeline {
 		stage('Deploy to AKS') {
 			agent {
 				docker {
-					image 'kubectl:1.23'  // Use the kubectl Docker image as the agent
+					image 'lachlanevenson/k8s-kubectl:v1.23.0'  // Use the kubectl Docker image as the agent
 					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
 				}
 			}
