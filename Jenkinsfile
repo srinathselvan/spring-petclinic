@@ -7,10 +7,11 @@ pipeline {
         SONAR_TOKEN = credentials('sonarcloud-token')
         SNYK_TOKEN = credentials('snyk-token')
         NVM_DIR = "${env.HOME}/.nvm"
-		AZURE_CLIENT_ID = credentials('azure-client-id')
+        AZURE_CLIENT_ID = credentials('azure-client-id')
         AZURE_CLIENT_SECRET = credentials('azure-client-secret')
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_SUBSCRIPTION_ID = 'f12d70fd-1146-4203-83b8-80ca66596958'
+        KUBE_CONFIG_PATH = '/var/lib/jenkins/.kube/config'  // Path for kubeconfig file in Jenkins
     }
 
     tools {
@@ -19,7 +20,6 @@ pipeline {
     }
 
     stages {
-        // Add the Verify Docker stage at the beginning
         stage('Verify Docker') {
             agent any
             steps {
@@ -38,14 +38,12 @@ pipeline {
             }
             steps {
                 script {
-                    // Compile and run tests only if tests are not skipped
                     sh 'mvn clean install -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
                     
-                    // Check if test reports exist before running the junit step
                     def reportExists = fileExists '**/target/surefire-reports/*.xml'
                     
                     if (reportExists) {
-                        junit '**/target/surefire-reports/*.xml'  // Publish test results if report exists
+                        junit '**/target/surefire-reports/*.xml'
                     } else {
                         echo 'No test reports found. Skipping junit step.'
                     }
@@ -62,7 +60,7 @@ pipeline {
             }
             steps {
                 script {
-                    withSonarQubeEnv('SonarCloud') {  // SonarQube environment configured in Jenkins
+                    withSonarQubeEnv('SonarCloud') {
                         sh """
                             mvn sonar:sonar \
                                 -Dsonar.organization=srinathselvan \
@@ -116,17 +114,15 @@ pipeline {
             }
             steps {
                 script {
-                    // Add -DskipTests to ensure tests are skipped during packaging
                     sh 'mvn package -Dmaven.checkstyle.skip=true -Dcheckstyle.skip=true -DskipTests'
                     
-                    // Check if the .jar files are created in the target directory
                     def jarFiles = sh(script: 'ls target/*.jar', returnStdout: true).trim()
                     
                     if (jarFiles) {
                         archiveArtifacts artifacts: 'target/*.jar', allowEmptyArchive: false
                     } else {
                         echo "No JAR files found to archive."
-                        currentBuild.result = 'UNSTABLE'  // Mark build as unstable if no JAR files are found
+                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
@@ -152,41 +148,52 @@ pipeline {
             }
         }
 
-
         stage('Azure Login') {
             steps {
                 script {
                     sh '''
-                        # Login to Azure using service principal
                         az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-                        # Set subscription
                         az account set --subscription $AZURE_SUBSCRIPTION_ID
                     '''
                 }
             }
         }
-		stage('Deploy to AKS') {
-			agent {
-				docker {
-					image 'lachlanevenson/k8s-kubectl:v1.23.0'
-					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-				}
-			}
-			steps {
-				script {
-					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-						sh '''
-							# Set KUBECONFIG and apply Kubernetes manifests
-							export KUBECONFIG=$KUBE_CONFIG
-							kubectl apply -f k8s/deployment.yaml
-							kubectl apply -f k8s/service.yaml
-						'''
-					}
-				}
-			}
-		}
-}
 
+        stage('Deploy to AKS') {
+            agent {
+                docker {
+                    image 'lachlanevenson/k8s-kubectl:v1.23.0'
+                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                }
+            }
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
+                        sh '''
+                            # Copy kubeconfig file to Jenkins home
+                            mkdir -p $HOME/.kube
+                            cp $KUBE_CONFIG $HOME/.kube/config
+
+                            # Ensure kubelogin is available
+                            if ! command -v kubelogin &> /dev/null
+                            then
+                                curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.tar.gz
+                                tar -xvzf kubelogin-linux-amd64.tar.gz
+                                mv kubelogin /usr/local/bin/
+                            fi
+
+                            # Use kubelogin for authentication to AKS
+                            kubelogin -kubeconfig $HOME/.kube/config
+
+                            # Apply Kubernetes manifests
+                            kubectl apply -f k8s/deployment.yaml
+                            kubectl apply -f k8s/service.yaml
+                        '''
+                    }
+                }
+            }
+        }
+    }
 
     post {
         always {
