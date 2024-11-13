@@ -159,7 +159,7 @@ pipeline {
             }
         }
 
-       stage('Deploy to AKS') {
+	stage('Deploy to AKS') {
 		agent {
 			docker {
 				image 'lachlanevenson/k8s-kubectl:v1.23.0'
@@ -170,9 +170,14 @@ pipeline {
 			script {
 				withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 					sh '''
-						# Set the home directory explicitly for the current user
-						mkdir -p ~/.kube
-						cp $KUBE_CONFIG ~/.kube/config
+						# Print environment variables to debug and confirm the home directory
+						echo "Home Directory: $HOME"
+						echo "Current User: $(whoami)"
+
+						# Use an absolute path for the .kube directory
+						KUBE_DIR="/var/lib/jenkins/.kube"
+						mkdir -p $KUBE_DIR
+						cp $KUBE_CONFIG $KUBE_DIR/config
 
 						# Ensure kubelogin is available
 						if ! command -v kubelogin &> /dev/null
@@ -183,7 +188,7 @@ pipeline {
 						fi
 
 						# Use kubelogin for authentication to AKS
-						kubelogin -kubeconfig ~/.kube/config
+						kubelogin -kubeconfig $KUBE_DIR/config
 
 						# Apply Kubernetes manifests
 						kubectl apply -f k8s/deployment.yaml
@@ -193,6 +198,7 @@ pipeline {
 			}
 		}
 	}
+
 
     }
 
