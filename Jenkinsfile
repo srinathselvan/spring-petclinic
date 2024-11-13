@@ -199,7 +199,7 @@ pipeline {
 							fi
 
 							# Use kubelogin for authentication to AKS
-							kubelogin -kubeconfig $KUBE_DIR/config
+							kubelogin --kubeconfig $KUBE_DIR/config
 
 							# Apply Kubernetes manifests
 							kubectl apply -f k8s/deployment.yaml
