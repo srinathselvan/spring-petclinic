@@ -163,7 +163,7 @@ pipeline {
 		agent {
 			docker {
 				image 'lachlanevenson/k8s-kubectl:v1.23.0'
-				args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+				args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint=""'
 			}
 		}
 		steps {
