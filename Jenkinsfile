@@ -11,7 +11,7 @@ pipeline {
         AZURE_CLIENT_SECRET = credentials('azure-client-secret')
         AZURE_TENANT_ID = credentials('azure-tenant-id')
         AZURE_SUBSCRIPTION_ID = 'f12d70fd-1146-4203-83b8-80ca66596958'
-        KUBE_CONFIG_PATH = '/var/lib/jenkins/.kube/config'  // Path for kubeconfig file in Jenkins
+        KUBE_CONFIG = '/var/lib/jenkins/.kube/config'  // Path for kubeconfig file in Jenkins
     }
 
     tools {
@@ -159,41 +159,39 @@ pipeline {
             }
         }
 
-        stage('Deploy to AKS') {
-            agent {
-                docker {
-                    image 'lachlanevenson/k8s-kubectl:v1.23.0'
-                    args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-                }
-            }
-            steps {
-                script {
-                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-                        sh '''
-                            # Copy kubeconfig file to Jenkins home
-                            mkdir -p $HOME/.kube
-                            cp $KUBE_CONFIG $HOME/.kube/config
+	stage('Deploy to AKS') {
+		agent {
+			docker {
+				image 'lachlanevenson/k8s-kubectl:v1.23.0'  // Use the kubectl Docker image as the agent
+				args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+			}
+		}
+		steps {
+			script {
+				withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG_PATH')]) {
+					sh '''
+						# Ensure the .kube directory exists in a valid location
+						mkdir -p $HOME/.kube
 
-                            # Ensure kubelogin is available
-                            if ! command -v kubelogin &> /dev/null
-                            then
-                                curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.tar.gz
-                                tar -xvzf kubelogin-linux-amd64.tar.gz
-                                mv kubelogin /usr/local/bin/
-                            fi
+						# Copy the kubeconfig file to the .kube directory
+						cp $KUBE_CONFIG_PATH $HOME/.kube/config
 
-                            # Use kubelogin for authentication to AKS
-                            kubelogin -kubeconfig $HOME/.kube/config
+						# Set the KUBECONFIG environment variable to the path of the kubeconfig file
+						export KUBECONFIG=$HOME/.kube/config
 
-                            # Apply Kubernetes manifests
-                            kubectl apply -f k8s/deployment.yaml
-                            kubectl apply -f k8s/service.yaml
-                        '''
-                    }
-                }
-            }
-        }
-    }
+						# Verify the cluster configuration (optional)
+						kubectl config view
+
+						# Deploy to AKS using kubectl
+						kubectl apply -f k8s/deployment.yaml
+						kubectl apply -f k8s/service.yaml
+					'''
+				}
+			}
+		}
+	}
+
+   }
 
     post {
         always {
