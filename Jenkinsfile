@@ -197,9 +197,13 @@ pipeline {
 								unzip -o kubelogin-linux-amd64.zip
 								mv bin/linux_amd64/kubelogin /usr/local/bin/
 							fi
+							
+							echo "Contents of kubeconfig:"
+							cat /var/lib/jenkins/.kube/config
+							kubectl config get-contexts --kubeconfig=$KUBE_DIR/config
 
 							# Use kubelogin for authentication to AKS
-							kubectl config use-context securecicd-cluster
+							kubectl --kubeconfig=$KUBE_DIR/config config use-context securecicd-cluster
 							kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
 
 							# Apply Kubernetes manifests
