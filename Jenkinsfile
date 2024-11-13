@@ -171,9 +171,8 @@ pipeline {
 				withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 					sh '''
 						# Set the home directory explicitly for the current user
-						export HOME=/home/jenkins
-						mkdir -p $HOME/.kube
-						cp $KUBE_CONFIG $HOME/.kube/config
+						mkdir -p ~/.kube
+						cp $KUBE_CONFIG ~/.kube/config
 
 						# Ensure kubelogin is available
 						if ! command -v kubelogin &> /dev/null
@@ -184,7 +183,7 @@ pipeline {
 						fi
 
 						# Use kubelogin for authentication to AKS
-						kubelogin -kubeconfig $HOME/.kube/config
+						kubelogin -kubeconfig ~/.kube/config
 
 						# Apply Kubernetes manifests
 						kubectl apply -f k8s/deployment.yaml
