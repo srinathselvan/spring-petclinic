@@ -194,7 +194,7 @@ pipeline {
 								fi
 
 								# Unzip the file
-								unzip kubelogin-linux-amd64.zip
+								unzip -o kubelogin-linux-amd64.zip
 								mv bin/linux_amd64/kubelogin /usr/local/bin/
 							fi
 
