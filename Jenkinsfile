@@ -195,7 +195,7 @@ pipeline {
 
 								# Unzip the file
 								unzip kubelogin-linux-amd64.zip
-								mv kubelogin /usr/local/bin/
+								mv bin/linux_amd64/kubelogin /usr/local/bin/
 							fi
 
 							# Use kubelogin for authentication to AKS
