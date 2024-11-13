@@ -205,6 +205,8 @@ pipeline {
 							# Use kubelogin for authentication to AKS
 							kubectl --kubeconfig=$KUBE_DIR/config config use-context securecicd-cluster
 							kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
+							
+							cat /var/lib/jenkins/.kube/config
 
 							# Apply Kubernetes manifests
 							kubectl apply -f k8s/deployment.yaml
