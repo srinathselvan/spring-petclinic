@@ -152,7 +152,7 @@ pipeline {
 		stage('Deploy to AKS') {
 			agent {
 				docker {
-					image 'bitnami/kubectl:1.23.0'  // Choose an appropriate image with kubectl pre-installed
+					image 'bitnami/kubectl:1.23.0'  // Use the kubectl Docker image as the agent
 					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
 				}
 			}
@@ -160,11 +160,10 @@ pipeline {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 						sh '''
-							# Run kubectl commands using the proper entrypoint
-							docker run --rm --entrypoint="" bitnami/kubectl:1.23.0 /bin/bash -c "
-							# Deploy to AKS
-							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/deployment.yaml
-							kubectl --kubeconfig=$KUBE_CONFIG apply -f k8s/service.yaml
+							# Deploy to AKS using kubectl
+							export KUBECONFIG=$KUBE_CONFIG
+							kubectl apply -f k8s/deployment.yaml
+							kubectl apply -f k8s/service.yaml
 						'''
 					}
 				}
