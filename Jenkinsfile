@@ -199,7 +199,7 @@ pipeline {
 							fi
 
 							# Use kubelogin for authentication to AKS
-							kubectl config use-context clusterUser_myVm_group_securecicd-cluster
+							kubectl config use-context securecicd-cluster
 							kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
 
 							# Apply Kubernetes manifests
