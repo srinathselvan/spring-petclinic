@@ -7,6 +7,10 @@ pipeline {
         SONAR_TOKEN = credentials('sonarcloud-token')
         SNYK_TOKEN = credentials('snyk-token')
         NVM_DIR = "${env.HOME}/.nvm"
+		AZURE_CLIENT_ID = credentials('azure-client-id')
+        AZURE_CLIENT_SECRET = credentials('azure-client-secret')
+        AZURE_TENANT_ID = credentials('azure-tenant-id')
+        AZURE_SUBSCRIPTION_ID = 'f12d70fd-1146-4203-83b8-80ca66596958'
     }
 
     tools {
@@ -148,11 +152,23 @@ pipeline {
             }
         }
 
-        // New 'Deploy to AKS' stage
+
+        stage('Azure Login') {
+            steps {
+                script {
+                    sh '''
+                        # Login to Azure using service principal
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        # Set subscription
+                        az account set --subscription $AZURE_SUBSCRIPTION_ID
+                    '''
+                }
+            }
+        }
 		stage('Deploy to AKS') {
 			agent {
 				docker {
-					image 'lachlanevenson/k8s-kubectl:v1.23.0'  // Use the kubectl Docker image as the agent
+					image 'lachlanevenson/k8s-kubectl:v1.23.0'
 					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
 				}
 			}
@@ -160,7 +176,7 @@ pipeline {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
 						sh '''
-							# Deploy to AKS using kubectl
+							# Set KUBECONFIG and apply Kubernetes manifests
 							export KUBECONFIG=$KUBE_CONFIG
 							kubectl apply -f k8s/deployment.yaml
 							kubectl apply -f k8s/service.yaml
@@ -169,9 +185,8 @@ pipeline {
 				}
 			}
 		}
+}
 
-
-    }
 
     post {
         always {
