@@ -152,8 +152,8 @@ pipeline {
 		stage('Deploy to AKS') {
 			agent {
 				docker {
-					image 'bitnami/kubectl:1.23.0'  // Use the kubectl Docker image as the agent
-					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+					image 'kubectl:1.23'  // Use the kubectl Docker image as the agent
+					args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
 				}
 			}
 			steps {
