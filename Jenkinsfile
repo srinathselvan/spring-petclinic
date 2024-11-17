@@ -207,6 +207,7 @@ pipeline {
 							kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
 							
 							cat /var/lib/jenkins/.kube/config
+							ls -l
 
 							# Apply Kubernetes manifests
 							kubectl apply -f k8s/deployment.yaml
