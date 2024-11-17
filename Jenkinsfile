@@ -207,7 +207,7 @@ pipeline {
 							kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
 							
 							cat /var/lib/jenkins/.kube/config
-							pwd
+							ls -l
 							cat /var/lib/jenkins/k8s-ca-decoded.crt
 
 							# Apply Kubernetes manifests
