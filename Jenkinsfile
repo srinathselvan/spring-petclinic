@@ -209,8 +209,8 @@ pipeline {
 							cat /var/lib/jenkins/.kube/config
 
 							# Apply Kubernetes manifests
-							kubectl apply -f k8s/deployment.yaml
-							kubectl apply -f k8s/service.yaml
+							kubectl --kubeconfig=/var/lib/jenkins/.kube/config --certificate-authority=/var/lib/jenkins/k8s-ca-decoded.crt apply -f k8s/deployment.yaml
+							kubectl --kubeconfig=/var/lib/jenkins/.kube/config --certificate-authority=/var/lib/jenkins/k8s-ca-decoded.crt apply -f k8s/service.yaml
 						'''
 					}
 				}
