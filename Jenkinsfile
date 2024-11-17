@@ -169,7 +169,7 @@ pipeline {
 			steps {
 				script {
 					withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-						sh '''
+						sh '''#!/bin/bash
 							# Print environment variables to debug and confirm the home directory
 							echo "Home Directory: $HOME"
 							echo "Current User: $(whoami)"
@@ -212,6 +212,8 @@ pipeline {
 							# Apply Kubernetes manifests
 							kubectl apply -f k8s/deployment.yaml
 							kubectl apply -f k8s/service.yaml
+							
+							exit 0
 						'''
 					}
 				}
