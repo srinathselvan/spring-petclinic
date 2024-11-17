@@ -169,7 +169,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-                        sh '''#!/bin/bash
+                        sh '''
                             # Print environment variables to debug and confirm the home directory
                             echo "Home Directory: $HOME"
                             echo "Current User: $(whoami)"
