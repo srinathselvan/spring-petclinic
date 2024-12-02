@@ -172,66 +172,35 @@ stage('Deploy to AKS') {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
                     // Set up Kubeconfig
                     sh '''
-                        # Print environment variables to debug and confirm the home directory
+                        # Print environment variables for debugging
                         echo "Home Directory: $HOME"
                         echo "Current User: $(whoami)"
-						
-						# Install unzip if not available
-						if ! command -v unzip &> /dev/null
-						then
-							echo "Unzip not found, installing..."
-							apk add --no-cache unzip
-						fi
 
+                        # Set up kubeconfig
+                        mkdir -p ~/.kube
+                        cp $KUBE_CONFIG ~/.kube/config
 
-                        # Use an absolute path for the .kube directory
-                        KUBE_DIR="/var/lib/jenkins/.kube"
-                        mkdir -p $KUBE_DIR
-                        cp $KUBE_CONFIG $KUBE_DIR/config
-
-                        # Ensure kubelogin is available
-                        if ! command -v kubelogin &> /dev/null
-                        then
-                            echo "kubelogin not found, downloading..."
-
-                            # Download kubelogin zip file
-                            curl -LO https://github.com/Azure/kubelogin/releases/download/v0.0.28/kubelogin-linux-amd64.zip
-
-                            # Check if the file was downloaded correctly (size check)
-                            if [ ! -f "kubelogin-linux-amd64.zip" ]; then
-                                echo "Failed to download kubelogin zip file."
-                                exit 1
-                            fi
-
-                            # Unzip the file
-                            unzip -o kubelogin-linux-amd64.zip
-                            mv bin/linux_amd64/kubelogin /usr/local/bin/
-                        fi
-
-                        echo "Contents of kubeconfig:"
-                        cat /var/lib/jenkins/.kube/config
-                        kubectl config get-contexts --kubeconfig=$KUBE_DIR/config
-
-                        # Use kubelogin for authentication to AKS
-                        kubectl --kubeconfig=$KUBE_DIR/config config use-context securecicd-cluster
-                        kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
-
-                        cat /var/lib/jenkins/.kube/config
-                        ls -l
-
+                        # Authenticate Azure CLI and convert kubeconfig if necessary
+                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+                        az account set --subscription $AZURE_SUBSCRIPTION_ID
+                        
+                        # Authenticate kubectl with AKS
+                        az aks get-credentials --resource-group myVm_group --name securecicd-cluster --file ~/.kube/config --overwrite-existing
+                        
                         # Apply Kubernetes manifests
-                        kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f ~/spring-petclinic/k8s/deployment.yaml
-                        kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f ~/spring-petclinic/k8s/service.yaml
+                        kubectl apply -f ~/spring-petclinic/k8s/deployment.yaml
+                        kubectl apply -f ~/spring-petclinic/k8s/service.yaml
                     '''
                 }
             } catch (Exception e) {
-                // Log the error but do not fail the pipeline
+                // Log the error and fail the stage
                 echo "An error occurred during deployment: ${e.getMessage()}"
-                currentBuild.result = 'SUCCESS'  // Set the stage as successful to pass the pipeline
+                currentBuild.result = 'FAILURE'
             }
         }
     }
 }
+
 
 
     }
