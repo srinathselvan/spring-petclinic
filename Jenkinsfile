@@ -212,8 +212,8 @@ stage('Deploy to AKS') {
                         ls -l
 
                         # Apply Kubernetes manifests
-                        kubectl apply -f k8s/deployment.yaml
-                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f ~/spring-petclinic/k8s/deployment.yaml
+                        kubectl apply -f ~/spring-petclinic/k8s/service.yaml
                     '''
                 }
             } catch (Exception e) {
