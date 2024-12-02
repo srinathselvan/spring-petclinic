@@ -202,18 +202,18 @@ stage('Deploy to AKS') {
 
                         echo "Contents of kubeconfig:"
                         cat /var/lib/jenkins/.kube/config
-                        sudo kubectl config get-contexts --kubeconfig=$KUBE_DIR/config
+                        kubectl config get-contexts --kubeconfig=$KUBE_DIR/config
 
                         # Use kubelogin for authentication to AKS
-                        sudo kubectl --kubeconfig=$KUBE_DIR/config config use-context securecicd-cluster
-                        sudo kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
+                        kubectl --kubeconfig=$KUBE_DIR/config config use-context securecicd-cluster
+                        kubelogin convert-kubeconfig -l azurecli --kubeconfig $KUBE_DIR/config
 
                         cat /var/lib/jenkins/.kube/config
                         ls -l
 
                         # Apply Kubernetes manifests
-                        sudo kubectl apply -f k8s/deployment.yaml
-                        sudo kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/deployment.yaml
+                        kubectl apply -f k8s/service.yaml
                     '''
                 }
             } catch (Exception e) {
