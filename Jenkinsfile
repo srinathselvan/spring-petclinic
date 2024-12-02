@@ -175,6 +175,14 @@ stage('Deploy to AKS') {
                         # Print environment variables to debug and confirm the home directory
                         echo "Home Directory: $HOME"
                         echo "Current User: $(whoami)"
+						
+						# Install unzip if not available
+						if ! command -v unzip &> /dev/null
+						then
+							echo "Unzip not found, installing..."
+							apk add --no-cache unzip
+						fi
+
 
                         # Use an absolute path for the .kube directory
                         KUBE_DIR="/var/lib/jenkins/.kube"
