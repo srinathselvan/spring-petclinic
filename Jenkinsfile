@@ -162,7 +162,7 @@ pipeline {
 stage('Deploy to AKS') {
     agent {
         docker {
-            image 'mcr.microsoft.com/azure-cli:2.42.0-kubectl-1.23.13'
+            image 'mcr.microsoft.com/azure-cli'  // Azure CLI image
             args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint=""'
         }
     }
@@ -170,23 +170,25 @@ stage('Deploy to AKS') {
         script {
             try {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBE_CONFIG')]) {
-                    // Set up Kubeconfig
                     sh '''
                         # Print environment variables for debugging
                         echo "Home Directory: $HOME"
                         echo "Current User: $(whoami)"
+                        
+                        # Install kubectl
+                        curl -LO https://dl.k8s.io/release/v1.23.13/bin/linux/amd64/kubectl
+                        chmod +x kubectl
+                        mv kubectl /usr/local/bin/
 
                         # Set up kubeconfig
                         mkdir -p ~/.kube
                         cp $KUBE_CONFIG ~/.kube/config
 
-                        # Authenticate Azure CLI and convert kubeconfig if necessary
+                        # Authenticate Azure CLI and set kubeconfig context
                         az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                         az account set --subscription $AZURE_SUBSCRIPTION_ID
-                        
-                        # Authenticate kubectl with AKS
-                        az aks get-credentials --resource-group myVm_group --name securecicd-cluster --file ~/.kube/config --overwrite-existing
-                        
+                        az aks get-credentials --resource-group myVm_group --name securecicd-cluster --overwrite-existing
+
                         # Apply Kubernetes manifests
                         kubectl apply -f ~/spring-petclinic/k8s/deployment.yaml
                         kubectl apply -f ~/spring-petclinic/k8s/service.yaml
@@ -200,6 +202,7 @@ stage('Deploy to AKS') {
         }
     }
 }
+
 
 
 
