@@ -162,7 +162,7 @@ pipeline {
 stage('Deploy to AKS') {
     agent {
         docker {
-            image 'mcr.microsoft.com/azure-cli'  // Azure CLI image
+            image 'lachlanevenson/k8s-kubectl:v1.23.0'
             args '--privileged -v /var/run/docker.sock:/var/run/docker.sock --user root --entrypoint=""'
         }
     }
