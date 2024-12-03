@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: secure-ci-cd-app
-        image: securecicdregistry.azurecr.io/secure-ci-cd-app:${GIT_COMMIT}
+        image: securecicdregistry.azurecr.io/secure-ci-cd-app:latest
         ports:
         - containerPort: 3000
 ---
